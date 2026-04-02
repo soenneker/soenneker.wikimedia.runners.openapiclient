@@ -5,6 +5,7 @@ using Soenneker.Extensions.String;
 using Soenneker.Extensions.ValueTask;
 using Soenneker.Git.Util.Abstract;
 using Soenneker.Kiota.Util.Abstract;
+using Soenneker.OpenApi.Fixer.Abstract;
 using Soenneker.Utils.Directory.Abstract;
 using Soenneker.Utils.Dotnet.Abstract;
 using Soenneker.Utils.Environment;
@@ -30,9 +31,10 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
     private readonly ICloudflareDownloader _cloudflareDownloader;
     private readonly IFileUtil _fileUtil;
     private readonly IDirectoryUtil _directoryUtil;
+    private readonly IOpenApiFixer _openApiFixer;
 
     public FileOperationsUtil(ILogger<FileOperationsUtil> logger, IConfiguration configuration, IGitUtil gitUtil, IDotnetUtil dotnetUtil, IFileUtil fileUtil,
-        IDirectoryUtil directoryUtil, IKiotaUtil kiotaUtil, ICloudflareDownloader cloudflareDownloader)
+        IDirectoryUtil directoryUtil, IKiotaUtil kiotaUtil, ICloudflareDownloader cloudflareDownloader, IOpenApiFixer openApiFixer)
     {
         _logger = logger;
         _configuration = configuration;
@@ -40,6 +42,7 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
         _dotnetUtil = dotnetUtil;
         _kiotaUtil = kiotaUtil;
         _cloudflareDownloader = cloudflareDownloader;
+        _openApiFixer = openApiFixer;
         _fileUtil = fileUtil;
         _directoryUtil = directoryUtil;
     }
@@ -57,13 +60,17 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
 
         await _cloudflareDownloader.DownloadFileToPath(openApiDocumentUrl, targetFilePath, cancellationToken: cancellationToken);
 
+        string fixedFilePath = Path.Combine(gitDirectory, "fixed.json");
+
+        await _openApiFixer.Fix(targetFilePath, fixedFilePath, cancellationToken);
+
         await _kiotaUtil.EnsureInstalled(cancellationToken);
 
         string srcDirectory = Path.Combine(gitDirectory, "src", Constants.Library);
 
         await DeleteAllExceptCsproj(srcDirectory, cancellationToken);
 
-        await _kiotaUtil.Generate(targetFilePath, "WikimediaOpenApiClient", Constants.Library, gitDirectory, cancellationToken)
+        await _kiotaUtil.Generate(fixedFilePath, "WikimediaOpenApiClient", Constants.Library, gitDirectory, cancellationToken)
                         .NoSync();
 
         await BuildAndPush(gitDirectory, cancellationToken)

@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Soenneker.Cloudflare.Downloader.Registrars;
 using Soenneker.Kiota.Util.Registrars;
 using Soenneker.Managers.Runners.Registrars;
+using Soenneker.OpenApi.Fixer.Registrars;
 using Soenneker.Wikimedia.Runners.OpenApiClient.Utils;
 using Soenneker.Wikimedia.Runners.OpenApiClient.Utils.Abstract;
 
@@ -24,7 +25,8 @@ public static class Startup
                 .AddScoped<IFileOperationsUtil, FileOperationsUtil>()
                 .AddRunnersManagerAsScoped()
                 .AddKiotaUtilAsScoped()
-                .AddCloudflareDownloaderAsScoped();
+                .AddCloudflareDownloaderAsScoped()
+                .AddOpenApiFixerAsScoped();
 
         return services;
     }
