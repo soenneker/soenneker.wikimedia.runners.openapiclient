@@ -20,7 +20,6 @@ using System.Threading.Tasks;
 
 namespace Soenneker.Wikimedia.Runners.OpenApiClient.Utils;
 
-///<inheritdoc cref="IFileOperationsUtil"/>
 public sealed class FileOperationsUtil : IFileOperationsUtil
 {
     private readonly ILogger<FileOperationsUtil> _logger;
@@ -87,8 +86,7 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
     {
         if (!(await _directoryUtil.Exists(directoryPath, cancellationToken)))
         {
-            _logger.LogWarning("Directory does not exist: {DirectoryPath}", directoryPath);
-            return;
+            throw new DirectoryNotFoundException($"Generated source directory does not exist: {directoryPath}");
         }
 
         try
@@ -107,6 +105,7 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to delete file: {FilePath}", file);
+                        throw;
                     }
                 }
             }
@@ -128,12 +127,14 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to delete directory: {DirectoryPath}", dir);
+                    throw;
                 }
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while cleaning the directory: {DirectoryPath}", directoryPath);
+            throw;
         }
     }
 
@@ -147,8 +148,7 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
 
         if (!successful)
         {
-            _logger.LogError("Build was not successful, exiting...");
-            return;
+            throw new InvalidOperationException($"Release build failed for {projFilePath}");
         }
 
         string gitHubToken = EnvironmentUtil.GetVariableStrict("GH__TOKEN");
